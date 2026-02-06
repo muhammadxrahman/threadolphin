@@ -1,0 +1,22 @@
+# Compiled Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+sniffer
+sniffer.dSYM/
+
+# Build Directories
+build/
+cmake-build-debug/
+.vs/
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
