@@ -1,4 +1,4 @@
-# C++ Packet Sniffer (Mini-Wireshark)
+# Threadolphin: a C++ Packet Sniffer (Mini-Wireshark)
 
 A low-level network packet capture tool written in C++ using `libpcap`. This project manually decodes the network stack (Ethernet -> IP -> TCP) and extracts application payloads from raw binary traffic.
 
