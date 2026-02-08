@@ -2,7 +2,8 @@
 #include <QDateTime>
 
 PacketModel::PacketModel(QObject *parent)
-    : QAbstractTableModel(parent), maxPackets(10000), nextPacketNumber(1)
+    : QAbstractTableModel(parent), maxPackets(10000), nextPacketNumber(1),
+      tcpCount(0), udpCount(0), icmpCount(0), nonIpCount(0), otherCount(0), totalBytes(0)
 {
 }
 
@@ -103,15 +104,42 @@ QVariant PacketModel::headerData(int section, Qt::Orientation orientation, int r
 
 void PacketModel::addPacket(const Packet &packet)
 {
-    // No mutex needed - this is called on main thread via queued connection
 
-    // Check if we've hit the limit
-    if (packets.size() >= maxPackets)
+    // Check if we've hit the limit (only if maxPackets > 0)
+    if (maxPackets > 0 && packets.size() >= maxPackets)
     {
+        // Update statistics for removed packet
+        const Packet &oldPacket = packets.first();
+        QString oldProtocol = QString::fromStdString(oldPacket.protocol);
+        
+        if (oldProtocol == "TCP") tcpCount--;
+        else if (oldProtocol == "UDP") udpCount--;
+        else if (oldProtocol == "ICMP") icmpCount--;
+        else if (oldProtocol == "Non-IP") nonIpCount--;
+        else otherCount--;
+        
+        totalBytes -= oldPacket.length;
+        
         beginRemoveRows(QModelIndex(), 0, 0);
         packets.removeFirst();
         endRemoveRows();
     }
+
+    // Update statistics for new packet
+    QString protocol = QString::fromStdString(packet.protocol);
+
+    if (protocol == "TCP")
+        tcpCount++;
+    else if (protocol == "UDP")
+        udpCount++;
+    else if (protocol == "ICMP")
+        icmpCount++;
+    else if (protocol == "Non-IP")
+        nonIpCount++;
+    else
+        otherCount++;
+
+    totalBytes += packet.length;
 
     // Add new packet
     int row = packets.size();
@@ -128,6 +156,15 @@ void PacketModel::clear()
     beginResetModel();
     packets.clear();
     nextPacketNumber = 1;
+
+    // Reset statistics
+    tcpCount = 0;
+    udpCount = 0;
+    icmpCount = 0;
+    nonIpCount = 0;
+    otherCount = 0;
+    totalBytes = 0;
+
     endResetModel();
 }
 
@@ -172,4 +209,34 @@ QColor PacketModel::getProtocolColor(const QString &protocol) const
         return QColor(55, 35, 45); // Dark purple
     else
         return QColor(30, 30, 30); // Dark default
+}
+
+int PacketModel::getTcpCount() const
+{
+    return tcpCount;
+}
+
+int PacketModel::getUdpCount() const
+{
+    return udpCount;
+}
+
+int PacketModel::getIcmpCount() const
+{
+    return icmpCount;
+}
+
+int PacketModel::getNonIpCount() const
+{
+    return nonIpCount;
+}
+
+int PacketModel::getOtherCount() const
+{
+    return otherCount;
+}
+
+qint64 PacketModel::getTotalBytes() const
+{
+    return totalBytes;
 }

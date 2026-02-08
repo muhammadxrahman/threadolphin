@@ -23,6 +23,7 @@ set(SOURCES
     src/CaptureThread.cpp
     src/PacketModel.cpp
     src/PacketParser.cpp
+    src/SettingsDialog.cpp
 )
 
 set(HEADERS
@@ -32,6 +33,7 @@ set(HEADERS
     src/Packet.h
     src/PacketModel.h
     src/PacketParser.h
+    src/SettingsDialog.h
 )
 
 # Create executable

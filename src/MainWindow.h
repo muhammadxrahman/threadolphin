@@ -9,10 +9,14 @@
 #include <QStatusBar>
 #include <QToolBar>
 #include <QSplitter>
+#include <QCheckBox>
+#include <QLineEdit>
+#include <QSortFilterProxyModel>
 #include "PacketCapture.h"
 #include "CaptureThread.h"
 #include "PacketModel.h"
 #include "Packet.h"
+#include "SettingsDialog.h"
 
 class MainWindow : public QMainWindow
 {
@@ -30,15 +34,19 @@ private slots:
     void onPermissionError(const QString &deviceName);
     void onPacketCaptured(const u_char *data, int length, const struct timeval &timestamp);
     void onPacketSelected(const QModelIndex &index);
+    void onFilterChanged(const QString &text);
+    void onSettingsClicked();
 
 private:
     void setupUI();
     void createToolbar();
     void populateDevices();
+
     // Packet capture
     PacketCapture *capture;
     CaptureThread *captureThread;
     PacketModel *packetModel;
+    QSortFilterProxyModel *proxyModel;
 
     // UI Components
     QTableView *packetTable;
@@ -48,6 +56,8 @@ private:
     QPushButton *stopButton;
     QStatusBar *statusBar;
     QSplitter *splitter;
+    QCheckBox *autoScrollCheckbox;
+    QLineEdit *filterEdit;
 };
 
 #endif // MAINWINDOW_H
