@@ -19,10 +19,19 @@ find_library(PCAP_LIBRARY pcap REQUIRED)
 set(SOURCES
     src/main.cpp
     src/MainWindow.cpp
+    src/PacketCapture.cpp
+    src/CaptureThread.cpp
+    src/PacketModel.cpp
+    src/PacketParser.cpp
 )
 
 set(HEADERS
     src/MainWindow.h
+    src/PacketCapture.h
+    src/CaptureThread.h
+    src/Packet.h
+    src/PacketModel.h
+    src/PacketParser.h
 )
 
 # Create executable
