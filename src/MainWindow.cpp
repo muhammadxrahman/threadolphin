@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     proxyModel = new QSortFilterProxyModel(this);
     proxyModel->setSourceModel(packetModel);
     proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-    proxyModel->setFilterKeyColumn(-1);  // Filter all columns
+    proxyModel->setFilterKeyColumn(-1); // Filter all columns
 
     // Connect signals
     connect(captureThread, &CaptureThread::captureStopped,
@@ -141,11 +141,11 @@ void MainWindow::createToolbar()
     toolbar->addWidget(stopButton);
 
     QPushButton *clearButton = new QPushButton("Clear", this);
-    connect(clearButton, &QPushButton::clicked, [this]() {
+    connect(clearButton, &QPushButton::clicked, [this]()
+            {
         packetModel->clear();
         detailView->clear();
-        statusBar->showMessage("Cleared");
-    });
+        statusBar->showMessage("Cleared"); });
     toolbar->addWidget(clearButton);
 
     toolbar->addSeparator();
@@ -153,28 +153,28 @@ void MainWindow::createToolbar()
     // Add filter box
     QLabel *filterLabel = new QLabel(" Filter: ", this);
     toolbar->addWidget(filterLabel);
-    
+
     filterEdit = new QLineEdit(this);
     filterEdit->setPlaceholderText("tcp, 192.168.1.1, port 443...");
     filterEdit->setMinimumWidth(200);
-    filterEdit->setClearButtonEnabled(true);  // Adds clear X button
+    filterEdit->setClearButtonEnabled(true); // Adds clear X button
     connect(filterEdit, &QLineEdit::textChanged, this, &MainWindow::onFilterChanged);
     toolbar->addWidget(filterEdit);
-    
+
     toolbar->addSeparator();
 
     // Add auto-scroll checkbox
     autoScrollCheckbox = new QCheckBox("Auto-scroll", this);
-    autoScrollCheckbox->setChecked(true);  // Enabled by default
+    autoScrollCheckbox->setChecked(true); // Enabled by default
     toolbar->addWidget(autoScrollCheckbox);
-    
+
     toolbar->addSeparator();
 
     // Add Settings button
     QPushButton *settingsButton = new QPushButton("Settings", this);
     connect(settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
     toolbar->addWidget(settingsButton);
-    
+
     toolbar->addSeparator();
 
     // Add stretch to push everything to the left
@@ -224,7 +224,7 @@ void MainWindow::onStartClicked()
     // Clear previous capture when starting new one
     packetModel->clear();
     detailView->clear();
-    
+
     // Get selected device name from combo box data
     int index = deviceCombo->currentIndex();
     if (index <= 0)
@@ -277,9 +277,10 @@ void MainWindow::onDeviceChanged(int index)
 
 void MainWindow::onCaptureStopped(const QString &reason)
 {
-    int total = packetModel->getPacketCount();
+    int displayed = packetModel->getPacketCount();
+    int total = packetModel->getTotalPacketsSeen();
     qint64 bytes = packetModel->getTotalBytes();
-    
+
     QString bytesStr;
     if (bytes < 1024)
         bytesStr = QString::number(bytes) + " B";
@@ -290,9 +291,13 @@ void MainWindow::onCaptureStopped(const QString &reason)
     else
         bytesStr = QString::number(bytes / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB";
     
-    QString stats = QString("Stopped - %1 packets captured").arg(total);
+    QString stats;
+    if (displayed < total)
+        stats = QString("Stopped - %1 packets captured (showing last %2)").arg(total).arg(displayed);
+    else
+        stats = QString("Stopped - %1 packets captured").arg(total);
     
-    if (total > 0)
+    if (displayed > 0)
     {
         int tcp = packetModel->getTcpCount();
         int udp = packetModel->getUdpCount();
@@ -303,15 +308,15 @@ void MainWindow::onCaptureStopped(const QString &reason)
         stats += " | ";
         
         if (tcp > 0)
-            stats += QString("TCP: %1% | ").arg(tcp * 100 / total);
+            stats += QString("TCP: %1% | ").arg(tcp * 100 / displayed);
         if (udp > 0)
-            stats += QString("UDP: %1% | ").arg(udp * 100 / total);
+            stats += QString("UDP: %1% | ").arg(udp * 100 / displayed);
         if (icmp > 0)
-            stats += QString("ICMP: %1% | ").arg(icmp * 100 / total);
+            stats += QString("ICMP: %1% | ").arg(icmp * 100 / displayed);
         if (nonIp > 0)
-            stats += QString("Non-IP: %1% | ").arg(nonIp * 100 / total);
+            stats += QString("Non-IP: %1% | ").arg(nonIp * 100 / displayed);
         if (other > 0)
-            stats += QString("Other: %1% | ").arg(other * 100 / total);
+            stats += QString("Other: %1% | ").arg(other * 100 / displayed);
         
         stats += bytesStr;
     }
@@ -360,7 +365,7 @@ void MainWindow::onPacketCaptured(const u_char *data, int length, const struct t
 
     // Create a packet and store raw data
     Packet packet;
-    packet.number = packetModel->getPacketCount() + 1;
+    packet.number = 0; // Will be assigned by model
     packet.timestamp = timestamp;
     packet.length = length;
 
@@ -383,10 +388,11 @@ void MainWindow::onPacketCaptured(const u_char *data, int length, const struct t
         packetTable->scrollToBottom();
     }
 
-   // Update status bar with statistics
-    int total = packetModel->getPacketCount();
+    // Update status bar with statistics
+    int displayed = packetModel->getPacketCount();
+    int total = packetModel->getTotalPacketsSeen();
     qint64 bytes = packetModel->getTotalBytes();
-    
+
     QString bytesStr;
     if (bytes < 1024)
         bytesStr = QString::number(bytes) + " B";
@@ -396,9 +402,13 @@ void MainWindow::onPacketCaptured(const u_char *data, int length, const struct t
         bytesStr = QString::number(bytes / (1024.0 * 1024.0), 'f', 1) + " MB";
     else
         bytesStr = QString::number(bytes / (1024.0 * 1024.0 * 1024.0), 'f', 2) + " GB";
-    
-    QString stats = QString("Capturing... %1 packets").arg(total);
-    
+
+    QString stats;
+    if (displayed < total)
+        stats = QString("Capturing... %1 packets (showing last %2)").arg(total).arg(displayed);
+    else
+        stats = QString("Capturing... %1 packets").arg(total);
+
     if (total > 0)
     {
         int tcp = packetModel->getTcpCount();
@@ -406,23 +416,23 @@ void MainWindow::onPacketCaptured(const u_char *data, int length, const struct t
         int icmp = packetModel->getIcmpCount();
         int nonIp = packetModel->getNonIpCount();
         int other = packetModel->getOtherCount();
-        
+
         stats += " | ";
-        
+
         if (tcp > 0)
-            stats += QString("TCP: %1% | ").arg(tcp * 100 / total);
+            stats += QString("TCP: %1% | ").arg(tcp * 100 / displayed);
         if (udp > 0)
-            stats += QString("UDP: %1% | ").arg(udp * 100 / total);
+            stats += QString("UDP: %1% | ").arg(udp * 100 / displayed);
         if (icmp > 0)
-            stats += QString("ICMP: %1% | ").arg(icmp * 100 / total);
+            stats += QString("ICMP: %1% | ").arg(icmp * 100 / displayed);
         if (nonIp > 0)
-            stats += QString("Non-IP: %1% | ").arg(nonIp * 100 / total);
+            stats += QString("Non-IP: %1% | ").arg(nonIp * 100 / displayed);
         if (other > 0)
-            stats += QString("Other: %1% | ").arg(other * 100 / total);
-        
+            stats += QString("Other: %1% | ").arg(other * 100 / displayed);
+
         stats += bytesStr;
     }
-    
+
     statusBar->showMessage(stats);
 }
 
@@ -433,60 +443,62 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
         detailView->clear();
         return;
     }
-    
+
     // Map proxy index to source model index
     QModelIndex sourceIndex = proxyModel->mapToSource(index);
     const Packet *packet = packetModel->getPacket(sourceIndex.row());
-    
+
     if (!packet)
     {
         detailView->clear();
         return;
     }
-    
+
     // Build detailed packet information
     std::ostringstream details;
-    
+
     details << "═══════════════════════════════════════════════════════════════\n";
     details << "Packet #" << packet->number << " - " << packet->length << " bytes\n";
     details << "═══════════════════════════════════════════════════════════════\n\n";
-    
+
     // Ethernet Layer
     if (packet->rawData.size() >= 14)
     {
         const u_char *data = packet->rawData.data();
         const u_char *srcMac = data + 6;
         const u_char *dstMac = data;
-        u_short etherType = ntohs(*(u_short*)(data + 12));
-        
+        u_short etherType = ntohs(*(u_short *)(data + 12));
+
         details << "┌─ ETHERNET II\n";
         details << "│  Source MAC:      ";
         for (int i = 0; i < 6; i++)
         {
-            details << std::hex << std::setfill('0') << std::setw(2) 
-                   << (int)srcMac[i] << std::dec;
-            if (i < 5) details << ":";
+            details << std::hex << std::setfill('0') << std::setw(2)
+                    << (int)srcMac[i] << std::dec;
+            if (i < 5)
+                details << ":";
         }
         details << "\n│  Destination MAC: ";
         for (int i = 0; i < 6; i++)
         {
-            details << std::hex << std::setfill('0') << std::setw(2) 
-                   << (int)dstMac[i] << std::dec;
-            if (i < 5) details << ":";
+            details << std::hex << std::setfill('0') << std::setw(2)
+                    << (int)dstMac[i] << std::dec;
+            if (i < 5)
+                details << ":";
         }
-        details << "\n│  Type:            0x" << std::hex << std::setw(4) 
-               << std::setfill('0') << etherType << std::dec;
-        
+        details << "\n│  Type:            0x" << std::hex << std::setw(4)
+                << std::setfill('0') << etherType << std::dec;
+
         if (etherType == 0x0800)
             details << " (IPv4)";
         else if (etherType == 0x0806)
             details << " (ARP)";
         else if (etherType == 0x86DD)
             details << " (IPv6)";
-        
+
         details << "\n└─\n\n";
     }
-    
+
     // IP Layer
     if (!packet->srcIP.empty() && !packet->dstIP.empty())
     {
@@ -496,7 +508,7 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
         details << "│  Protocol:        " << packet->protocol << "\n";
         details << "└─\n\n";
     }
-    
+
     // Transport Layer (TCP/UDP)
     if (!packet->srcPort.empty() && !packet->dstPort.empty())
     {
@@ -517,20 +529,20 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
             details << "└─\n\n";
         }
     }
-    
+
     // Payload (hex dump)
     details << "┌─ PAYLOAD\n";
-    
+
     // Calculate payload start
     int payloadStart = 14; // Ethernet
-    
+
     if (packet->rawData.size() > 14 && !packet->srcIP.empty())
     {
         const u_char *data = packet->rawData.data();
         const u_char *ip = data + 14;
         int ipHeaderLen = (ip[0] & 0x0f) * 4;
         payloadStart += ipHeaderLen;
-        
+
         if (packet->protocol == "TCP" && packet->rawData.size() > payloadStart + 12)
         {
             const u_char *tcp = data + 14 + ipHeaderLen;
@@ -542,52 +554,53 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
             payloadStart += 8; // UDP header is always 8 bytes
         }
     }
-    
+
     int payloadLen = packet->length - payloadStart;
-    
+
     if (payloadLen > 0 && payloadStart < packet->rawData.size())
     {
         const u_char *payload = packet->rawData.data() + payloadStart;
         int displayLen = std::min(payloadLen, 256); // Show first 256 bytes
-        
+
         details << "│  Length: " << payloadLen << " bytes";
         if (payloadLen > 256)
             details << " (showing first 256)";
         details << "\n│\n";
-        
+
         // Hex dump with ASCII
         for (int i = 0; i < displayLen; i += 16)
         {
             details << "│  " << std::hex << std::setw(4) << std::setfill('0') << i << "  ";
-            
+
             // Hex bytes
             for (int j = 0; j < 16; j++)
             {
                 if (i + j < displayLen)
                 {
-                    details << std::hex << std::setw(2) << std::setfill('0') 
-                           << (int)payload[i + j] << " ";
+                    details << std::hex << std::setw(2) << std::setfill('0')
+                            << (int)payload[i + j] << " ";
                 }
                 else
                 {
                     details << "   ";
                 }
-                
-                if (j == 7) details << " ";
+
+                if (j == 7)
+                    details << " ";
             }
-            
+
             details << " │ ";
-            
+
             // ASCII representation
             for (int j = 0; j < 16 && (i + j) < displayLen; j++)
             {
                 char c = payload[i + j];
                 details << (isprint(c) ? c : '.');
             }
-            
+
             details << std::dec << "\n";
         }
-        
+
         if (payloadLen > 256)
         {
             details << "│  ... (" << (payloadLen - 256) << " more bytes)\n";
@@ -597,9 +610,9 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
     {
         details << "│  No payload data\n";
     }
-    
+
     details << "└─\n";
-    
+
     // Set the text
     detailView->setPlainText(QString::fromStdString(details.str()));
 }
@@ -607,7 +620,7 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
 void MainWindow::onFilterChanged(const QString &text)
 {
     proxyModel->setFilterFixedString(text);
-    
+
     // Update status to show filtered count
     if (text.isEmpty())
     {
@@ -618,29 +631,31 @@ void MainWindow::onFilterChanged(const QString &text)
         int visibleCount = proxyModel->rowCount();
         int totalCount = packetModel->getPacketCount();
         statusBar->showMessage(QString("Showing %1 of %2 packets (filtered by: %3)")
-                               .arg(visibleCount).arg(totalCount).arg(text));
+                                   .arg(visibleCount)
+                                   .arg(totalCount)
+                                   .arg(text));
     }
 }
 
 void MainWindow::onSettingsClicked()
 {
     SettingsDialog dialog(this);
-    
+
     // Load current setting
     QSettings settings("ThreaDolphin", "PacketAnalyzer");
     int currentLimit = settings.value("packetLimit", 10000).toInt();
     dialog.setPacketLimit(currentLimit);
-    
+
     if (dialog.exec() == QDialog::Accepted)
     {
         int newLimit = dialog.getPacketLimit();
-        
+
         // Save setting
         settings.setValue("packetLimit", newLimit);
-        
+
         // Update model
         packetModel->setMaxPackets(newLimit < 0 ? 1000000 : newLimit);
-        
+
         // Show confirmation
         if (newLimit < 0)
             statusBar->showMessage("Packet limit set to unlimited");

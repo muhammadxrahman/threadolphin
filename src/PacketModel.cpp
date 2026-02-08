@@ -111,40 +111,44 @@ void PacketModel::addPacket(const Packet &packet)
         // Update statistics for removed packet
         const Packet &oldPacket = packets.first();
         QString oldProtocol = QString::fromStdString(oldPacket.protocol);
-        
-        if (oldProtocol == "TCP") tcpCount--;
-        else if (oldProtocol == "UDP") udpCount--;
-        else if (oldProtocol == "ICMP") icmpCount--;
-        else if (oldProtocol == "Non-IP") nonIpCount--;
-        else otherCount--;
-        
+
+        if (oldProtocol == "TCP")
+            tcpCount--;
+        else if (oldProtocol == "UDP")
+            udpCount--;
+        else if (oldProtocol == "ICMP")
+            icmpCount--;
+        else if (oldProtocol == "Non-IP")
+            nonIpCount--;
+        else
+            otherCount--;
+
         totalBytes -= oldPacket.length;
-        
+
         beginRemoveRows(QModelIndex(), 0, 0);
         packets.removeFirst();
         endRemoveRows();
     }
 
+    // Create a copy and assign proper packet number
+    Packet newPacket = packet;
+    newPacket.number = nextPacketNumber++;
+
     // Update statistics for new packet
-    QString protocol = QString::fromStdString(packet.protocol);
-
-    if (protocol == "TCP")
-        tcpCount++;
-    else if (protocol == "UDP")
-        udpCount++;
-    else if (protocol == "ICMP")
-        icmpCount++;
-    else if (protocol == "Non-IP")
-        nonIpCount++;
-    else
-        otherCount++;
-
-    totalBytes += packet.length;
-
+    QString protocol = QString::fromStdString(newPacket.protocol);
+    
+    if (protocol == "TCP") tcpCount++;
+    else if (protocol == "UDP") udpCount++;
+    else if (protocol == "ICMP") icmpCount++;
+    else if (protocol == "Non-IP") nonIpCount++;
+    else otherCount++;
+    
+    totalBytes += newPacket.length;
+    
     // Add new packet
     int row = packets.size();
     beginInsertRows(QModelIndex(), row, row);
-    packets.append(packet);
+    packets.append(newPacket);
     endInsertRows();
 }
 
@@ -239,4 +243,9 @@ int PacketModel::getOtherCount() const
 qint64 PacketModel::getTotalBytes() const
 {
     return totalBytes;
+}
+
+int PacketModel::getTotalPacketsSeen() const
+{
+    return nextPacketNumber - 1;
 }

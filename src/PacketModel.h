@@ -32,6 +32,7 @@ public:
     int getNonIpCount() const;
     int getOtherCount() const;
     qint64 getTotalBytes() const;
+    int getTotalPacketsSeen() const;
     
     // Set maximum packet limit
     void setMaxPackets(int max);
