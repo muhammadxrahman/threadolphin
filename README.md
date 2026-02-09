@@ -82,8 +82,11 @@ Right-click → Run as Administrator
 
 ## Screenshots
 
+- Filter packets via text search
 ![Packet Filtering](screenshots/screenshot2.png)
+- View packet details upon click
 ![Packet Details](screenshots/screenshot3.png)
+- Import and export PCAP files to view
 ![Importing PCAP Files](screenshots/screenshot4.png)
 
 ## License
