@@ -26,6 +26,7 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 - Auto-scroll toggle for live captures
 - Keyboard shortcuts (Cmd/Ctrl+R, Cmd/Ctrl+F, Cmd/Ctrl+E)
 - Persistent settings
+- Native macOS .app bundle with custom icon
 
 ## Build Instructions
 
@@ -36,7 +37,7 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 brew install qt@6 libpcap cmake
 ```
 
-**Linux (Debian/Ubuntu):**
+**Linux:**
 ```bash
 sudo apt-get install qt6-base-dev libpcap-dev cmake build-essential
 ```
@@ -57,7 +58,16 @@ make
 
 ### Run
 
-**macOS/Linux:**
+**macOS:**
+```bash
+# As app bundle
+sudo open ThreaDolphin.app
+
+# Or directly
+sudo ./ThreaDolphin.app/Contents/MacOS/ThreaDolphin
+```
+
+**Linux:**
 ```bash
 sudo ./ThreaDolphin  # Requires root for packet capture
 ```
@@ -79,15 +89,47 @@ Right-click → Run as Administrator
 - Circular buffer for memory-efficient long captures
 - Standard PCAP file format implementation
 - Cross-platform CMake build system
+- Native app bundles (.app on macOS)
+
+## Project Structure
+```
+ThreaDolphin/
+├── CMakeLists.txt
+├── src/
+│   ├── main.cpp
+│   ├── MainWindow.cpp/h
+│   ├── PacketCapture.cpp/h      # libpcap wrapper
+│   ├── CaptureThread.cpp/h       # Threaded capture
+│   ├── PacketModel.cpp/h         # Qt table model
+│   ├── PacketParser.cpp/h        # Protocol dissection
+│   ├── Packet.h                  # Data structures
+│   └── SettingsDialog.cpp/h      # Configuration UI
+└── resources/
+    ├── ThreaDolphin.icns         # macOS icon
+    └── Info.plist.in             # macOS bundle metadata
+```
 
 ## Screenshots
 
-- Filter packets via text search
+**Filter packets via text search**
 ![Packet Filtering](screenshots/screenshot2.png)
-- View packet details upon click
+**View packet details upon click**
 ![Packet Details](screenshots/screenshot3.png)
-- Import and export PCAP files to view
+**Import and export PCAP files to view**
 ![Importing PCAP Files](screenshots/screenshot4.png)
+
+## Known Limitations
+
+- Requires administrator/root privileges for packet capture
+- IPv6 not currently supported (IPv4 only)
+- TCP stream reassembly not implemented
+
+## Future Enhancements
+
+- Windows build and testing
+- Follow TCP Stream feature
+- Live bandwidth graphing
+- Additional protocol support (ARP, IPv6, DNS)
 
 ## License
 
