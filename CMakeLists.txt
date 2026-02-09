@@ -32,6 +32,7 @@ set(SOURCES
     src/PacketModel.cpp
     src/PacketParser.cpp
     src/SettingsDialog.cpp
+    src/StreamWindow.cpp
 )
 
 set(HEADERS
@@ -42,6 +43,8 @@ set(HEADERS
     src/PacketModel.h
     src/PacketParser.h
     src/SettingsDialog.h
+    src/StreamIdentifier.h
+    src/StreamWindow.h
 )
 
 # Create executable

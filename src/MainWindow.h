@@ -17,6 +17,8 @@
 #include "PacketModel.h"
 #include "Packet.h"
 #include "SettingsDialog.h"
+#include "StreamWindow.h"
+#include "StreamIdentifier.h"
 
 class MainWindow : public QMainWindow
 {
