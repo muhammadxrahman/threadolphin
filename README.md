@@ -1,28 +1,95 @@
-# Threadolphin: a C++ Packet Sniffer (Mini-Wireshark)
+# ThreaDolphin - Network Packet Analyzer
 
-A low-level network packet capture tool written in C++ using `libpcap`. This project manually decodes the network stack (Ethernet -> IP -> TCP) and extracts application payloads from raw binary traffic.
+A cross-platform packet capture and analysis tool built with C++ and Qt. Captures live network traffic, parses protocol headers, and exports to industry-standard PCAP format.
+
+![ThreaDolphin Screenshot](screenshots/screenshot1.png)
 
 ## Features
-* **Device Scanning:** Enumerates all available network interfaces.
-* **Promiscuous Mode:** Captures traffic not specifically addressed to the host.
-* **Protocol Parsing:**
-    * **Ethernet:** MAC Address decoding.
-    * **IPv4:** Header length calculation and address resolution.
-    * **TCP:** Port mapping and Flag detection (SYN/ACK/FIN).
-* **Deep Packet Inspection:** Extracts and sanitizes ASCII payloads (e.g., HTTP headers).
 
-## Prerequisites
+**Capture & Analysis**
+- Real-time packet capture with multi-threaded architecture
+- Protocol parsing: Ethernet, IPv4, TCP, UDP, ICMP
+- Hex dump viewer with ASCII representation
+- Live statistics (protocol distribution, bandwidth)
 
-### macOS (most likely already installed)
+**Filtering & Search**
+- Text-based packet filtering (protocol, IP, port)
+- Color-coded protocol display
+- Configurable packet buffer (1K - 100K+ packets)
+
+**Import/Export**
+- Save/load PCAP files (Wireshark-compatible)
+- Copy packet data (summary, details, hex dump)
+- Right-click context menus
+
+**UX Features**
+- Auto-scroll toggle for live captures
+- Keyboard shortcuts (Cmd/Ctrl+R, Cmd/Ctrl+F, Cmd/Ctrl+E)
+- Persistent settings
+
+## Build Instructions
+
+### Prerequisites
+
+**macOS:**
 ```bash
-brew install libpcap
+brew install qt@6 libpcap cmake
 ```
 
-### Linux (Debian/Ubuntu)
+**Linux (Debian/Ubuntu):**
 ```bash
-sudo apt-get install libpcap-dev
+sudo apt-get install qt6-base-dev libpcap-dev cmake build-essential
 ```
 
-### Windows
-1. Install Npcap (Ensure "Install in WinPcap API-compatible Mode" is checked).
-2. Download the Npcap SDK.
+**Windows:**
+- Install Qt6 (from qt.io)
+- Install Npcap (WinPcap API-compatible mode)
+- Install CMake
+
+### Compile
+```bash
+git clone https://github.com/muhammadxrahman/threadolphin.git
+cd threadolphin
+mkdir build && cd build
+cmake ..
+make
+```
+
+### Run
+
+**macOS/Linux:**
+```bash
+sudo ./ThreaDolphin  # Requires root for packet capture
+```
+
+**Windows:**
+Right-click → Run as Administrator
+
+## Architecture
+
+- **Capture Thread:** Non-blocking packet capture using libpcap
+- **Qt Model/View:** Separation of data and presentation
+- **Proxy Model:** Real-time filtering without data modification
+- **Packet Parser:** Manual protocol dissection (no third-party libraries)
+
+## Technical Highlights
+
+- Multi-threaded design (GUI thread + capture thread)
+- Thread-safe packet queue with Qt signals/slots
+- Circular buffer for memory-efficient long captures
+- Standard PCAP file format implementation
+- Cross-platform CMake build system
+
+## Screenshots
+
+![Packet Filtering](screenshots/screenshot2.png)
+![Packet Details](screenshots/screenshot3.png)
+![Importing PCAP Files](screenshots/screenshot4.png)
+
+## License
+
+MIT
+
+## Acknowledgments
+
+Inspired by Wireshark.

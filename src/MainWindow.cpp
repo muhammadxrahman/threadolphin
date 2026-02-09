@@ -6,6 +6,14 @@
 #include <QMessageBox>
 #include <QCheckBox>
 #include <QSettings>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QDir>
+#include <QDebug>
+#include <QClipboard>
+#include <QMenu>
+#include <QApplication>
+#include <QShortcut>
 #include "PacketParser.h"
 #include <cstring>
 // #include <iostream>
@@ -43,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onPacketCaptured);
 
     setupUI();
+    setupShortcuts();
 }
 
 MainWindow::~MainWindow()
@@ -72,6 +81,11 @@ void MainWindow::setupUI()
     packetTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     packetTable->setSelectionMode(QAbstractItemView::SingleSelection);
     packetTable->horizontalHeader()->setStretchLastSection(true);
+
+    // Enable context menu
+    packetTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(packetTable, &QTableView::customContextMenuRequested,
+            this, &MainWindow::onPacketTableContextMenu);
 
     // Connect selection signal
     connect(packetTable->selectionModel(), &QItemSelectionModel::currentRowChanged,
@@ -140,6 +154,7 @@ void MainWindow::createToolbar()
     connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopClicked);
     toolbar->addWidget(stopButton);
 
+    // Clear
     QPushButton *clearButton = new QPushButton("Clear", this);
     connect(clearButton, &QPushButton::clicked, [this]()
             {
@@ -148,6 +163,17 @@ void MainWindow::createToolbar()
         statusBar->showMessage("Cleared"); });
     toolbar->addWidget(clearButton);
 
+    toolbar->addSeparator();
+
+    // Add Save/Open buttons
+    QPushButton *openButton = new QPushButton("Open...", this);
+    connect(openButton, &QPushButton::clicked, this, &MainWindow::onOpenPcapClicked);
+    toolbar->addWidget(openButton);
+    
+    QPushButton *saveButton = new QPushButton("Save...", this);
+    connect(saveButton, &QPushButton::clicked, this, &MainWindow::onSavePcapClicked);
+    toolbar->addWidget(saveButton);
+    
     toolbar->addSeparator();
 
     // Add filter box
@@ -662,4 +688,402 @@ void MainWindow::onSettingsClicked()
         else
             statusBar->showMessage(QString("Packet limit set to %1").arg(newLimit));
     }
+}
+
+void MainWindow::onSavePcapClicked()
+{
+    if (packetModel->getPacketCount() == 0)
+    {
+        QMessageBox::information(this, "No Packets", "There are no packets to save.");
+        return;
+    }
+    
+    QString filename = QFileDialog::getSaveFileName(
+        this,
+        "Save Packet Capture",
+        QDir::homePath() + "/capture.pcap",
+        "PCAP Files (*.pcap);;All Files (*)"
+    );
+    
+    if (filename.isEmpty())
+        return;
+    
+    if (!filename.endsWith(".pcap", Qt::CaseInsensitive))
+        filename += ".pcap";
+    
+    if (savePcapFile(filename))
+    {
+        statusBar->showMessage(QString("Saved %1 packets to %2")
+                              .arg(packetModel->getPacketCount())
+                              .arg(QFileInfo(filename).fileName()));
+    }
+    else
+    {
+        QMessageBox::critical(this, "Save Failed", 
+                            "Failed to save PCAP file. Check permissions.");
+    }
+}
+
+void MainWindow::onOpenPcapClicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+        this,
+        "Open Packet Capture",
+        QDir::homePath(),
+        "PCAP Files (*.pcap *.cap *.pcapng);;All Files (*)"
+    );
+    
+    if (filename.isEmpty())
+        return;
+    
+    // Clear existing packets
+    packetModel->clear();
+    detailView->clear();
+    
+    if (loadPcapFile(filename))
+    {
+        statusBar->showMessage(QString("Loaded %1 packets from %2")
+                              .arg(packetModel->getPacketCount())
+                              .arg(QFileInfo(filename).fileName()));
+    }
+    else
+    {
+        QMessageBox::critical(this, "Open Failed", 
+                            "Failed to open PCAP file. File may be corrupted or in an unsupported format.");
+    }
+}
+
+bool MainWindow::savePcapFile(const QString &filename)
+{
+    // Open a dummy pcap handle for writing (we need this for pcap_dump_open)
+    pcap_t *dummy = pcap_open_dead(DLT_EN10MB, 65535);
+    if (!dummy)
+        return false;
+    
+    pcap_dumper_t *dumper = pcap_dump_open(dummy, filename.toStdString().c_str());
+    if (!dumper)
+    {
+        pcap_close(dummy);
+        return false;
+    }
+    
+    // Write each packet
+    for (int i = 0; i < packetModel->getPacketCount(); i++)
+    {
+        const Packet *packet = packetModel->getPacket(i);
+        if (!packet)
+            continue;
+        
+        // Create pcap packet header
+        struct pcap_pkthdr header;
+        header.ts = packet->timestamp;
+        header.caplen = packet->length;
+        header.len = packet->length;
+        
+        // Write packet
+        pcap_dump((u_char *)dumper, &header, packet->rawData.data());
+    }
+    
+    pcap_dump_close(dumper);
+    pcap_close(dummy);
+    
+    return true;
+}
+
+bool MainWindow::loadPcapFile(const QString &filename)
+{
+    char errbuf[PCAP_ERRBUF_SIZE];
+    
+    pcap_t *handle = pcap_open_offline(filename.toStdString().c_str(), errbuf);
+    if (!handle)
+    {
+        qDebug() << "Error opening file:" << errbuf;
+        return false;
+    }
+    
+    struct pcap_pkthdr *header;
+    const u_char *data;
+    int result;
+    
+    // Read packets one by one
+    while ((result = pcap_next_ex(handle, &header, &data)) >= 0)
+    {
+        if (result == 0)
+            continue; // Timeout
+        
+        // Create packet
+        Packet packet;
+        packet.number = 0; // Will be assigned by model
+        packet.timestamp = header->ts;
+        packet.length = header->caplen;
+        
+        // Copy packet data
+        packet.rawData.resize(header->caplen);
+        std::memcpy(packet.rawData.data(), data, header->caplen);
+        
+        // Parse packet
+        PacketParser::parsePacket(packet);
+        
+        // Add to model
+        packetModel->addPacket(packet);
+    }
+    
+    pcap_close(handle);
+    
+    return packetModel->getPacketCount() > 0;
+}
+
+void MainWindow::onPacketTableContextMenu(const QPoint &pos)
+{
+    QModelIndex index = packetTable->indexAt(pos);
+    if (!index.isValid())
+        return;
+    
+    // Map to source model
+    QModelIndex sourceIndex = proxyModel->mapToSource(index);
+    const Packet *packet = packetModel->getPacket(sourceIndex.row());
+    
+    if (!packet)
+        return;
+    
+    QMenu menu(this);
+    
+    QAction *copySummary = menu.addAction("Copy Summary");
+    QAction *copyDetails = menu.addAction("Copy Details");
+    QAction *copyHex = menu.addAction("Copy as Hex");
+    QAction *copyInfo = menu.addAction("Copy Info");
+    
+    QAction *selected = menu.exec(packetTable->viewport()->mapToGlobal(pos));
+    
+    if (!selected)
+        return;
+    
+    QClipboard *clipboard = QApplication::clipboard();
+    
+    if (selected == copySummary)
+    {
+        clipboard->setText(getPacketSummary(packet));
+        statusBar->showMessage("Copied packet summary to clipboard");
+    }
+    else if (selected == copyDetails)
+    {
+        clipboard->setText(getPacketDetails(packet));
+        statusBar->showMessage("Copied packet details to clipboard");
+    }
+    else if (selected == copyHex)
+    {
+        clipboard->setText(getPacketHex(packet));
+        statusBar->showMessage("Copied hex dump to clipboard");
+    }
+    else if (selected == copyInfo)
+    {
+        clipboard->setText(QString::fromStdString(packet->info));
+        statusBar->showMessage("Copied packet info to clipboard");
+    }
+}
+
+QString MainWindow::getPacketSummary(const Packet *packet) const
+{
+    QString summary;
+    summary += QString("Packet #%1\n").arg(packet->number);
+    summary += QString("Time: %1.%2\n")
+              .arg(packet->timestamp.tv_sec)
+              .arg(packet->timestamp.tv_usec, 6, 10, QChar('0'));
+    summary += QString("Length: %1 bytes\n").arg(packet->length);
+    summary += QString("Protocol: %1\n").arg(QString::fromStdString(packet->protocol));
+    
+    if (!packet->srcIP.empty() && !packet->dstIP.empty())
+    {
+        summary += QString("Source: %1").arg(QString::fromStdString(packet->srcIP));
+        if (!packet->srcPort.empty())
+            summary += QString(":%1").arg(QString::fromStdString(packet->srcPort));
+        summary += "\n";
+        
+        summary += QString("Destination: %1").arg(QString::fromStdString(packet->dstIP));
+        if (!packet->dstPort.empty())
+            summary += QString(":%1").arg(QString::fromStdString(packet->dstPort));
+        summary += "\n";
+    }
+    
+    if (!packet->info.empty())
+        summary += QString("Info: %1\n").arg(QString::fromStdString(packet->info));
+    
+    return summary;
+}
+
+QString MainWindow::getPacketDetails(const Packet *packet) const
+{
+    // This is the same content shown in the detail view
+    std::ostringstream details;
+    
+    details << "═══════════════════════════════════════════════════════════════\n";
+    details << "Packet #" << packet->number << " - " << packet->length << " bytes\n";
+    details << "═══════════════════════════════════════════════════════════════\n\n";
+    
+    // Ethernet Layer
+    if (packet->rawData.size() >= 14)
+    {
+        const u_char *data = packet->rawData.data();
+        const u_char *srcMac = data + 6;
+        const u_char *dstMac = data;
+        u_short etherType = ntohs(*(u_short*)(data + 12));
+        
+        details << "┌─ ETHERNET II\n";
+        details << "│  Source MAC:      ";
+        for (int i = 0; i < 6; i++)
+        {
+            details << std::hex << std::setfill('0') << std::setw(2) 
+                   << (int)srcMac[i] << std::dec;
+            if (i < 5) details << ":";
+        }
+        details << "\n│  Destination MAC: ";
+        for (int i = 0; i < 6; i++)
+        {
+            details << std::hex << std::setfill('0') << std::setw(2) 
+                   << (int)dstMac[i] << std::dec;
+            if (i < 5) details << ":";
+        }
+        details << "\n│  Type:            0x" << std::hex << std::setw(4) 
+               << std::setfill('0') << etherType << std::dec;
+        
+        if (etherType == 0x0800)
+            details << " (IPv4)";
+        else if (etherType == 0x0806)
+            details << " (ARP)";
+        else if (etherType == 0x86DD)
+            details << " (IPv6)";
+        
+        details << "\n└─\n\n";
+    }
+    
+    // IP Layer
+    if (!packet->srcIP.empty() && !packet->dstIP.empty())
+    {
+        details << "┌─ INTERNET PROTOCOL (IP)\n";
+        details << "│  Source IP:       " << packet->srcIP << "\n";
+        details << "│  Destination IP:  " << packet->dstIP << "\n";
+        details << "│  Protocol:        " << packet->protocol << "\n";
+        details << "└─\n\n";
+    }
+    
+    // Transport Layer
+    if (!packet->srcPort.empty() && !packet->dstPort.empty())
+    {
+        if (packet->protocol == "TCP")
+        {
+            details << "┌─ TRANSMISSION CONTROL PROTOCOL (TCP)\n";
+            details << "│  Source Port:     " << packet->srcPort << "\n";
+            details << "│  Dest Port:       " << packet->dstPort << "\n";
+            details << "│  Info:            " << packet->info << "\n";
+            details << "└─\n\n";
+        }
+        else if (packet->protocol == "UDP")
+        {
+            details << "┌─ USER DATAGRAM PROTOCOL (UDP)\n";
+            details << "│  Source Port:     " << packet->srcPort << "\n";
+            details << "│  Dest Port:       " << packet->dstPort << "\n";
+            details << "│  Info:            " << packet->info << "\n";
+            details << "└─\n\n";
+        }
+    }
+    
+    return QString::fromStdString(details.str());
+}
+
+QString MainWindow::getPacketHex(const Packet *packet) const
+{
+    QString hex;
+    const u_char *data = packet->rawData.data();
+    int length = packet->rawData.size();
+    
+    for (int i = 0; i < length; i += 16)
+    {
+        // Offset
+        hex += QString("%1  ").arg(i, 4, 16, QChar('0'));
+        
+        // Hex bytes
+        for (int j = 0; j < 16; j++)
+        {
+            if (i + j < length)
+            {
+                hex += QString("%1 ").arg(data[i + j], 2, 16, QChar('0'));
+            }
+            else
+            {
+                hex += "   ";
+            }
+            
+            if (j == 7) hex += " ";
+        }
+        
+        hex += " | ";
+        
+        // ASCII representation
+        for (int j = 0; j < 16 && (i + j) < length; j++)
+        {
+            char c = data[i + j];
+            hex += (isprint(c) ? c : '.');
+        }
+        
+        hex += "\n";
+    }
+    
+    return hex;
+}
+
+void MainWindow::setupShortcuts()
+{
+    // Start/Stop capture (toggle)
+    QShortcut *startStopShortcut2 = new QShortcut(QKeySequence("Ctrl+R"), this);
+    connect(startStopShortcut2, &QShortcut::activated, [this]() {
+        if (captureThread->isCapturing())
+            onStopClicked();
+        else if (startButton->isEnabled())
+            onStartClicked();
+    });
+    
+    // Clear packets
+    QShortcut *clearShortcut = new QShortcut(QKeySequence("Ctrl+K"), this);
+    connect(clearShortcut, &QShortcut::activated, [this]() {
+        packetModel->clear();
+        detailView->clear();
+        statusBar->showMessage("Cleared");
+    });
+    
+    // Focus filter box
+    QShortcut *filterShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
+    connect(filterShortcut, &QShortcut::activated, [this]() {
+        filterEdit->setFocus();
+        filterEdit->selectAll();
+    });
+    
+    // Open PCAP file
+    QShortcut *openShortcut = new QShortcut(QKeySequence::Open, this);  // Ctrl+O
+    connect(openShortcut, &QShortcut::activated, this, &MainWindow::onOpenPcapClicked);
+    
+    // Save PCAP file - Use Ctrl+E (E for Export)
+    QShortcut *saveShortcut = new QShortcut(QKeySequence("Ctrl+E"), this);
+    connect(saveShortcut, &QShortcut::activated, this, &MainWindow::onSavePcapClicked);
+    
+    // Settings
+    QShortcut *settingsShortcut = new QShortcut(QKeySequence("Ctrl+,"), this);
+    connect(settingsShortcut, &QShortcut::activated, this, &MainWindow::onSettingsClicked);
+    
+    // Copy selected packet
+    QShortcut *copyShortcut = new QShortcut(QKeySequence::Copy, this);  // Ctrl+C
+    connect(copyShortcut, &QShortcut::activated, [this]() {
+        QModelIndex currentIndex = packetTable->currentIndex();
+        if (!currentIndex.isValid())
+            return;
+        
+        QModelIndex sourceIndex = proxyModel->mapToSource(currentIndex);
+        const Packet *packet = packetModel->getPacket(sourceIndex.row());
+        
+        if (packet)
+        {
+            QClipboard *clipboard = QApplication::clipboard();
+            clipboard->setText(getPacketSummary(packet));
+            statusBar->showMessage("Copied packet summary to clipboard");
+        }
+    });
 }

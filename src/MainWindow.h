@@ -36,11 +36,22 @@ private slots:
     void onPacketSelected(const QModelIndex &index);
     void onFilterChanged(const QString &text);
     void onSettingsClicked();
+    void onSavePcapClicked();  
+    void onOpenPcapClicked();
+    void onPacketTableContextMenu(const QPoint &pos);
 
 private:
     void setupUI();
     void createToolbar();
     void populateDevices();
+    void setupShortcuts();
+    bool savePcapFile(const QString &filename);   
+    bool loadPcapFile(const QString &filename);
+
+    // Helper methods for copying
+    QString getPacketSummary(const Packet *packet) const;  
+    QString getPacketDetails(const Packet *packet) const;  
+    QString getPacketHex(const Packet *packet) const;
 
     // Packet capture
     PacketCapture *capture;
