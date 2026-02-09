@@ -2,7 +2,8 @@
 
 A cross-platform packet capture and analysis tool built with C++ and Qt. Captures live network traffic, parses protocol headers, and exports to industry-standard PCAP format.
 
-![ThreaDolphin Icon](screenshots/threadolphinicon.png)
+<img src="https://github.com/muhammadxrahman/threadolphin/blob/main/screenshots/threadolphinicon.png" width="300" />
+
 
 ## Features
 
