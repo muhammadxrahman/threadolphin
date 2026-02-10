@@ -4,7 +4,6 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 
 <img src="https://github.com/muhammadxrahman/threadolphin/blob/main/screenshots/threadolphinicon.png" width="300" />
 
-
 ## Features
 
 **Capture & Analysis**
@@ -28,7 +27,7 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 - Auto-scroll toggle for live captures
 - Keyboard shortcuts (Cmd/Ctrl+R, Cmd/Ctrl+F, Cmd/Ctrl+E)
 - Persistent settings
-- Native macOS .app bundle with custom icon
+- Native app bundles (.app on macOS, .exe with icon on Windows)
 
 ## Build Instructions
 
@@ -36,26 +35,43 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 
 **macOS:**
 ```bash
-brew install qt@6 libpcap cmake
+brew install qt@6 cmake
 ```
 
-**Linux:**
+**Linux (Debian/Ubuntu):**
 ```bash
 sudo apt-get install qt6-base-dev libpcap-dev cmake build-essential
 ```
 
 **Windows:**
-- Install Qt6 (from qt.io)
-- Install Npcap (WinPcap API-compatible mode)
-- Install CMake
+- Install [Qt6 for MSVC](https://www.qt.io/download) (select MSVC 2022 64-bit)
+- Install [Npcap](https://npcap.com/#download) (check "Install in WinPcap API-compatible Mode")
+- Download [Npcap SDK](https://npcap.com/#download) and extract to `C:\npcap-sdk-1.16`
+- Install [CMake](https://cmake.org/download/)
+- Install [Visual Studio 2022](https://visualstudio.microsoft.com/) (Community Edition with C++ tools)
 
 ### Compile
+
+**macOS/Linux:**
 ```bash
 git clone https://github.com/muhammadxrahman/threadolphin.git
 cd threadolphin
 mkdir build && cd build
 cmake ..
 make
+```
+
+**Windows:**
+```powershell
+git clone https://github.com/muhammadxrahman/threadolphin.git
+cd threadolphin
+mkdir build
+cd build
+cmake .. -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/msvc2022_64"
+cmake --build . --config Release
+
+# Deploy Qt DLLs (makes .exe portable)
+C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe .\Release\ThreaDolphin.exe
 ```
 
 ### Run
@@ -75,11 +91,18 @@ sudo ./ThreaDolphin  # Requires root for packet capture
 ```
 
 **Windows:**
-Right-click → Run as Administrator
+```powershell
+# Run from Release folder
+cd build\Release
+
+# Right-click ThreaDolphin.exe → Run as Administrator
+# Or from PowerShell:
+Start-Process -FilePath "ThreaDolphin.exe" -Verb RunAs
+```
 
 ## Architecture
 
-- **Capture Thread:** Non-blocking packet capture using libpcap
+- **Capture Thread:** Non-blocking packet capture using libpcap/Npcap
 - **Qt Model/View:** Separation of data and presentation with proxy filtering
 - **Packet Parser:** Manual protocol dissection (Ethernet/IP/TCP/UDP headers)
 - **Circular Buffer:** Memory-efficient storage with configurable limits
@@ -93,8 +116,9 @@ Right-click → Run as Administrator
 - Standard PCAP file format for Wireshark interoperability
 - TCP stream isolation using 4-tuple matching (src/dst IP:port)
 - Bidirectional payload reassembly with sequence ordering
-- Cross-platform CMake build system
-- Native app bundles (.app on macOS, .exe on Windows)
+- Cross-platform CMake build system with platform-specific optimizations
+- Native app bundles (.app on macOS, .exe with embedded icon on Windows)
+- Platform abstraction: libpcap (Unix) / Npcap (Windows)
 
 ## Key Features Explained
 
@@ -118,11 +142,11 @@ Export captured packets to standard PCAP format for analysis in Wireshark or oth
 ## Project Structure
 ```
 ThreaDolphin/
-├── CMakeLists.txt
+├── CMakeLists.txt                # Cross-platform build configuration
 ├── src/
 │   ├── main.cpp
 │   ├── MainWindow.cpp/h          # Main application window
-│   ├── PacketCapture.cpp/h       # libpcap wrapper
+│   ├── PacketCapture.cpp/h       # libpcap/Npcap wrapper
 │   ├── CaptureThread.cpp/h       # Threaded packet capture
 │   ├── PacketModel.cpp/h         # Qt table model
 │   ├── PacketParser.cpp/h        # Protocol dissection
@@ -132,6 +156,8 @@ ThreaDolphin/
 │   └── StreamIdentifier.h        # Stream matching logic
 └── resources/
     ├── ThreaDolphin.icns         # macOS icon
+    ├── ThreaDolphin.ico          # Windows icon
+    ├── windows_icon.rc           # Windows resource script
     └── Info.plist.in             # macOS bundle metadata
 ```
 
@@ -165,7 +191,6 @@ ThreaDolphin/
 
 ## Future Enhancements
 
-- Windows build and testing
 - IPv6 support
 - Additional protocol support (ARP, IPv6, DNS)
 
