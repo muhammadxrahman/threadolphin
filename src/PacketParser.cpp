@@ -1,7 +1,14 @@
 #include "PacketParser.h"
-#include <arpa/inet.h>
 #include <sstream>
 #include <iomanip>
+
+// Platform-specific includes
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#else
+    #include <arpa/inet.h>
+#endif
 
 void PacketParser::parsePacket(Packet &packet)
 {

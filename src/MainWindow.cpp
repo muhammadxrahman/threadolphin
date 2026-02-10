@@ -586,7 +586,7 @@ void MainWindow::onPacketSelected(const QModelIndex &index)
     if (payloadLen > 0 && payloadStart < packet->rawData.size())
     {
         const u_char *payload = packet->rawData.data() + payloadStart;
-        int displayLen = std::min(payloadLen, 256); // Show first 256 bytes
+        int displayLen = (payloadLen < 256) ? payloadLen : 256; // Show first 256 bytes
 
         details << "│  Length: " << payloadLen << " bytes";
         if (payloadLen > 256)

@@ -3,13 +3,21 @@
 
 #include <vector>
 #include <string>
-#include <ctime>
+
+// Platform-specific time includes
+#ifdef _WIN32
+    #include <winsock2.h>
+    // Windows doesn't have timeval in the same place
+    // but pcap.h will provide it
+#else
+    #include <sys/time.h>
+#endif
 
 struct Packet
 {
     int number;                      
     struct timeval timestamp;        
-    std::vector<u_char> rawData; // bytes
+    std::vector<unsigned char> rawData; // Use unsigned char instead of u_char
     int length;                  
     
     // parsed fields 

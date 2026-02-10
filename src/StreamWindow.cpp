@@ -222,7 +222,8 @@ QString StreamWindow::formatConversation(const std::string &data, bool isClient)
         // Display as hex dump
         result += "│  [Binary data - showing hex dump]\n│\n";
         
-        for (size_t i = 0; i < std::min(data.size(), size_t(256)); i += 16)
+        size_t maxSize = (data.size() < 256) ? data.size() : 256;
+        for (size_t i = 0; i < maxSize; i += 16)
         {
             result += QString("│  %1  ").arg(i, 4, 16, QChar('0'));
             

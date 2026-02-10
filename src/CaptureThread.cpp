@@ -1,6 +1,14 @@
 #include "CaptureThread.h"
 // #include <iostream>
-#include <sys/time.h>
+
+// Platform-specific includes
+#ifdef _WIN32
+    #include <winsock2.h>
+#else
+    #include <sys/time.h>
+#endif
+
+#include <cstring>
 
 CaptureThread::CaptureThread(QObject *parent)
     : QThread(parent), handle(nullptr), stopRequested(false)

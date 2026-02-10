@@ -2,7 +2,14 @@
 #define PACKETPARSER_H
 
 #include "Packet.h"
-#include <netinet/in.h>
+
+// Platform-specific includes
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#else
+    #include <netinet/in.h>
+#endif
 
 // Ethernet Header
 #define ETHER_ADDR_LEN 6

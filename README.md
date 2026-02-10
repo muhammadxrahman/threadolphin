@@ -174,4 +174,4 @@ MIT
 
 ## Acknowledgments
 
-Inspired by Wireshark.
+Inspired by Wireshark. Built with Qt.
