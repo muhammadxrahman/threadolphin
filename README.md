@@ -173,7 +173,7 @@ ThreaDolphin/
 
 ## Screenshots
 **Compatible with Windows**
-![ThreaDolphin on Windows 11](screenshots\screenshot5win.png)
+![ThreaDolphin on Windows 11](screenshots/screenshot5win.png)
 **Capturing Packets**
 ![ThreaDolphin Screenshot](screenshots/screenshot1.png)
 **Filter packets via text search**
