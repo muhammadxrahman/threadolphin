@@ -146,7 +146,8 @@ ThreaDolphin/
 - **Cmd/Ctrl + C** - Copy selected packet
 
 ## Screenshots
-
+**Compatible with Windows**
+![ThreaDolphin on Windows 11](screenshots\screenshot5win.png)
 **Capturing Packets**
 ![ThreaDolphin Screenshot](screenshots/screenshot1.png)
 **Filter packets via text search**

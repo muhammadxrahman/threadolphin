@@ -4,9 +4,10 @@ project(ThreaDolphin VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# MSVC-specific flags for C++17
+# MSVC-specific flags for Qt 6.10+
 if(MSVC)
-    add_compile_options(/Zc:__cplusplus)
+    add_compile_options(/Zc:__cplusplus /permissive- /DNOMINMAX)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Qt6 setup
@@ -71,9 +72,15 @@ set(HEADERS
     src/StreamWindow.h
 )
 
+# Platform-specific resources
+if(WIN32)
+    # Windows icon resource
+    set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows_icon.rc")
+endif()
+
 # Create executable
 if(APPLE)
-    # Set app icon for macOS
+    # macOS app bundle
     set(MACOSX_BUNDLE_ICON_FILE ThreaDolphin.icns)
     set(APP_ICON_MACOSX ${CMAKE_CURRENT_SOURCE_DIR}/resources/ThreaDolphin.icns)
     set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES
@@ -81,7 +88,6 @@ if(APPLE)
     
     add_executable(ThreaDolphin MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${APP_ICON_MACOSX})
     
-    # Set macOS bundle properties
     set_target_properties(ThreaDolphin PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.threadolphin.app"
         MACOSX_BUNDLE_BUNDLE_NAME "ThreaDolphin"
@@ -90,8 +96,14 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist.in
     )
 elseif(WIN32)
-    # Windows executable
-    add_executable(ThreaDolphin WIN32 ${SOURCES} ${HEADERS})
+    # Windows executable with icon
+    add_executable(ThreaDolphin WIN32 ${SOURCES} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
+    
+    # Set executable properties
+    set_target_properties(ThreaDolphin PROPERTIES
+        WIN32_EXECUTABLE TRUE
+        OUTPUT_NAME "ThreaDolphin"
+    )
 else()
     # Linux executable
     add_executable(ThreaDolphin ${SOURCES} ${HEADERS})
