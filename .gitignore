@@ -13,6 +13,15 @@ build/
 cmake-build-debug/
 .vs/
 
+# Artifacts
+release-windows/
+*.zip
+*.dmg
+
+# Qt generated files
+*.pro.user
+*_autogen/
+
 # OS Generated Files
 .DS_Store
 Thumbs.db
