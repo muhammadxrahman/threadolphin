@@ -7,6 +7,7 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 ## Features
 
 **Capture & Analysis**
+
 - Real-time packet capture with multi-threaded architecture
 - Protocol parsing: Ethernet, IPv4, TCP, UDP, ICMP
 - Hex dump viewer with ASCII representation
@@ -14,16 +15,19 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 - Follow TCP Stream - isolate and reassemble individual TCP connections
 
 **Filtering & Search**
+
 - Text-based packet filtering (protocol, IP, port)
 - Color-coded protocol display
 - Configurable packet buffer (1K - 100K+ packets)
 
 **Import/Export**
+
 - Save/load PCAP files (Wireshark-compatible)
 - Copy packet data (summary, details, hex dump)
 - Right-click context menus
 
 **UX Features**
+
 - Auto-scroll toggle for live captures
 - Keyboard shortcuts (Cmd/Ctrl+R, Cmd/Ctrl+F, Cmd/Ctrl+E)
 - Persistent settings
@@ -34,16 +38,19 @@ A cross-platform packet capture and analysis tool built with C++ and Qt. Capture
 ### Prerequisites
 
 **macOS:**
+
 ```bash
 brew install qt@6 cmake
 ```
 
 **Linux (Debian/Ubuntu):**
+
 ```bash
 sudo apt-get install qt6-base-dev libpcap-dev cmake build-essential
 ```
 
 **Windows:**
+
 - Install [Qt6 for MSVC](https://www.qt.io/download) (select MSVC 2022 64-bit)
 - Install [Npcap](https://npcap.com/#download) (check "Install in WinPcap API-compatible Mode")
 - Download [Npcap SDK](https://npcap.com/#download) and extract to `C:\npcap-sdk-1.16`
@@ -53,6 +60,7 @@ sudo apt-get install qt6-base-dev libpcap-dev cmake build-essential
 ### Compile
 
 **macOS/Linux:**
+
 ```bash
 git clone https://github.com/muhammadxrahman/threadolphin.git
 cd threadolphin
@@ -62,6 +70,7 @@ make
 ```
 
 **Windows:**
+
 ```powershell
 git clone https://github.com/muhammadxrahman/threadolphin.git
 cd threadolphin
@@ -77,20 +86,26 @@ C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe .\Release\ThreaDolphin.exe
 ### Run
 
 **macOS:**
-```bash
-# As app bundle
-sudo open ThreaDolphin.app
 
-# Or directly
+```bash
+# Run with sudo (required for packet capture)
+sudo /Applications/ThreaDolphin.app/Contents/MacOS/ThreaDolphin
+
+# Or from the build directory:
+cd build
 sudo ./ThreaDolphin.app/Contents/MacOS/ThreaDolphin
 ```
 
+**Note:** `sudo open ThreaDolphin.app` will NOT work - macOS strips sudo privileges when using the `open` command.
+
 **Linux:**
+
 ```bash
 sudo ./ThreaDolphin  # Requires root for packet capture
 ```
 
 **Windows:**
+
 ```powershell
 # Run from Release folder
 cd build\Release
@@ -123,23 +138,29 @@ Start-Process -FilePath "ThreaDolphin.exe" -Verb RunAs
 ## Key Features Explained
 
 ### Follow TCP Stream
+
 Right-click any TCP packet and select "Follow TCP Stream" to:
+
 - Filter and display only packets belonging to that connection
 - Reassemble the conversation with client/server sections color-coded
 - View application-layer data (HTTP requests/responses, etc.)
 - Useful for debugging protocols and analyzing network conversations
 
 ### Real-time Filtering
+
 Type any text in the filter box to instantly search across:
+
 - Protocol names (tcp, udp, icmp)
 - IP addresses (complete or partial)
 - Port numbers
 - Packet info/details
 
 ### PCAP Compatibility
+
 Export captured packets to standard PCAP format for analysis in Wireshark or other tools. Import existing PCAP files to analyze offline captures.
 
 ## Project Structure
+
 ```
 ThreaDolphin/
 ├── CMakeLists.txt                # Cross-platform build configuration
@@ -172,6 +193,7 @@ ThreaDolphin/
 - **Cmd/Ctrl + C** - Copy selected packet
 
 ## Screenshots
+
 **Compatible with Windows**
 ![ThreaDolphin on Windows 11](screenshots/screenshot5win.png)
 **Capturing Packets**

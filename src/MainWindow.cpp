@@ -355,22 +355,23 @@ void MainWindow::onCaptureStopped(const QString &reason)
 
 void MainWindow::onPermissionError(const QString &deviceName)
 {
-    QString message = "Permission denied to capture on " + deviceName + ".\n\n";
+    QString message;
 
 #ifdef __APPLE__
-    message += "On macOS, you need to run ThreaDolphin with administrator privileges:\n\n";
-    message += "1. Close this application\n";
-    message += "2. Open Terminal\n";
-    message += "3. Run: sudo ./ThreaDolphin\n";
-    message += "4. Enter your password when prompted\n\n";
-    message += "Alternatively, you can grant capture permissions to your user account.";
+    message = "Permission denied for packet capture on " + deviceName + ".\n\n"
+              "macOS requires root privileges.\n\n"
+              "Please run:\n"
+              "sudo /Applications/ThreaDolphin.app/Contents/MacOS/ThreaDolphin\n\n"
+              "Note: 'sudo open ThreaDolphin.app' will NOT work.";
 #elif _WIN32
-    message += "On Windows, you need to run ThreaDolphin as Administrator:\n\n";
-    message += "1. Close this application\n";
-    message += "2. Right-click on ThreaDolphin\n";
-    message += "3. Select 'Run as Administrator'\n";
+    message = "Permission denied for packet capture on " + deviceName + ".\n\n"
+              "Windows requires administrator privileges.\n\n"
+              "Please right-click ThreaDolphin.exe and select 'Run as Administrator'.";
 #else
-    message += "You may need to run this application with elevated privileges (sudo).";
+    message = "Permission denied for packet capture on " + deviceName + ".\n\n"
+              "Linux requires root privileges.\n\n"
+              "Please run:\n"
+              "sudo ./ThreaDolphin";
 #endif
 
     QMessageBox::critical(this, "Permission Error", message);
