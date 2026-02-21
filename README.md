@@ -87,16 +87,22 @@ C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe .\Release\ThreaDolphin.exe
 
 **macOS:**
 
+ThreaDolphin requires administrator privileges for packet capture.
+
 ```bash
-# Run with sudo (required for packet capture)
+# From Applications folder (after installing DMG):
 sudo /Applications/ThreaDolphin.app/Contents/MacOS/ThreaDolphin
 
-# Or from the build directory:
+# From build directory:
 cd build
 sudo ./ThreaDolphin.app/Contents/MacOS/ThreaDolphin
 ```
 
-**Note:** `sudo open ThreaDolphin.app` will NOT work - macOS strips sudo privileges when using the `open` command.
+**Important Notes:**
+
+- Double-clicking the app will open it but packet capture will fail
+- `sudo open ThreaDolphin.app` will NOT work - macOS strips sudo privileges
+- If macOS blocks the app as "damaged", run: `xattr -cr /Applications/ThreaDolphin.app`
 
 **Linux:**
 
