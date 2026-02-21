@@ -78,10 +78,6 @@ C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe .\Release\ThreaDolphin.exe
 
 **macOS:**
 ```bash
-# As app bundle
-sudo open ThreaDolphin.app
-
-# Or directly
 sudo ./ThreaDolphin.app/Contents/MacOS/ThreaDolphin
 ```
 
@@ -176,6 +172,8 @@ ThreaDolphin/
 ![ThreaDolphin on Windows 11](screenshots/screenshot5win.png)
 **Capturing Packets**
 ![ThreaDolphin Screenshot](screenshots/screenshot1.png)
+**Follow the TCP Stream**
+![Follow TCP Stream](screenshots/screenshot6.png)
 **Filter packets via text search**
 ![Packet Filtering](screenshots/screenshot2.png)
 **View packet details upon click**
